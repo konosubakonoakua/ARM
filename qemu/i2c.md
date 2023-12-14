@@ -7,10 +7,11 @@ qemu-system-arm -M orangepi-pc \
   -sd sdcard.img \
   -serial stdio \
   -monitor telnet:127.0.0.1:1234,server,nowait \
-  -device i2c-echo,address=0x33 \
   -device ssd0303,address=0x3c
 ```
 ## ssd0303
+Datasheet [Here](https://serdisplib.sourceforge.net/ser/doc/Treiber_IC-SSD0303_OLED_96x36.pdf).
+
 The device is implemented by xilinx in qemu, there are open source drivers for ssd0303, refer to [OSRAMStringDraw](https://github.com/FreeRTOS/FreeRTOS/blob/b9cb18e46e7042d1dc1475bf054cc5278e422d16/FreeRTOS/Demo/CORTEX_LM3S811_GCC/hw_include/osram96x16.c#L587).
 
 The main logic looks like:
@@ -96,6 +97,7 @@ static int ssd0303_send(I2CSlave *i2c, uint8_t data)
 ```
 
 After comparing the above two codes, I made up some linux shell code to print strings on the simulated oled in qemu window.
+Use [i2ctransfer](https://manpages.debian.org/buster/i2c-tools/i2ctransfer.8.en.html) instead of i2cset. 
 
 ```shell
 # /root/oled.sh
@@ -459,6 +461,11 @@ Paste the shell code to console (qemu geust os console) then execute the followi
 ```shell
 # source /root/oled.sh
 oledprint3 "    :)    :D    :o   "
-#oledprint5 "    :)    :D    :o   "
+oledprint "                      "
+oledprint "    :)  :D  :o   "
 ```
-Finally we get the desired result: ![oled 3x5 font](https://github.com/konosubakonoakua/ARM/assets/42881610/eb78dcda-9cb3-44f8-8a6c-657775096687)
+Finally we get the desired result:
+
+![oled 3x5 font](https://github.com/konosubakonoakua/ARM/assets/42881610/eb78dcda-9cb3-44f8-8a6c-657775096687)
+
+![oled 5x7 font](https://github.com/konosubakonoakua/ARM/assets/42881610/50111c18-7dce-4e82-b464-4d8e4212590e)
