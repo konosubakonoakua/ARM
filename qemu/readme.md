@@ -23,15 +23,22 @@ make -j8
 - We can find the pre-built image in [release page](https://github.com/konosubakonoakua/ARM/releases/tag/orangepi-pc-sd-img)
 - We use telnet to redirect the `qemu monitor console` to `127.0.0.1:1234`, and surely we need to connect it by execute `telnet 127.0.0.1 123` in a new terminal.
 - We add device (no hot-plug) by `-device <devicename>,bus=<bus>,address=<addr>`, in case that we want to know what kind of devices qemu-system-arm supports, use `qemu-system-arm -device ?`.
+- Use `-serial telnet blahblah` instead of `-serial stdio` to avoid accidentally exit when hitting `ctrl-c`.
 
 ```shell
-qemu-system-arm -M orangepi-pc \
+qemu-system-arm \
+  -M orangepi-pc \
   -m 1G \
+  -nographic \
   -sd sdcard.img \
-  -serial stdio \
+  -serial telnet:127.0.0.1:4321,server,nowait \
   -monitor telnet:127.0.0.1:1234,server,nowait \
   -device i2c-echo,address=0x33 \
-  -device ssd0303,address=0x3c
+  -device ssd0303,address=0x3c &
+# -serial stdio
+
+# waiting for server ready
+sleep 2 && telnet 127.0.0.1 4321
 ```
 
 In case we do not want to load u-boot:
@@ -43,36 +50,42 @@ qemu-system-arm \
  -M orangepi-pc \
  -m 1G \
  -nographic \
+ -serial telnet:127.0.0.1:4321,server,nowait \
  -kernel ${IMAGE_DIR}/zImage \
  -dtb ${IMAGE_DIR}/sun8i-h3-orangepi-pc.dtb \
- -sd sdcard.img -append "console=ttyS0,115200 rootwait root=/dev/mmcblk0p1" \
- # -drive file=${IMAGE_DIR}/rootfs.ext2,if=sd,format=raw -append "console=ttyS0,115200 rootwait root=/dev/mmcblk0" \
+ -sd sdcard.img -append "rootwait root=/dev/mcblk0p1" &
+ # -drive file=${IMAGE_DIR}/rootfs.ext2,if=sd,format=raw -append "rootwait root=/dev/mmcblk0" \
  # -drive if=none,id=stick,file=sdcard.img -device usb-storage,bus=usb-bus.0,drive=stick \
  # -nic user \
  # -gdb tcp::12451 \
  # -S \
+
+sleep 2 && telnet 127.0.0.1 4321
 ```
 
 In case we want to boot in different storage:
 
 ```shell
 # boot with sdcard image, use `root=/dev/mmcblk0p1`, aka partition 1, since formatted.
--sd sdcard.img -append "console=ttyS0,115200 rootwait root=/dev/mmcblk0p1" \
+-sd sdcard.img -append "rootwait root=/dev/mmcblk0p1" \
 
 # boot with rootfs, use `root=/dev/mmcblk0` since `format=raw`.
--drive file=${IMAGE_DIR}/rootfs.ext2,if=sd,format=raw -append "console=ttyS0,115200 rootwait root=/dev/mmcblk0" \
+-drive file=${IMAGE_DIR}/rootfs.ext2,if=sd,format=raw -append "rootwait root=/dev/mmcblk0" \
 
 # boot with usb-stick, `not tested`.
 -drive if=none,id=stick,file=sdcard.img -device usb-storage,bus=usb-bus.0,drive=stick \
 ```
 
-### qemu monitor console
+### qemu console
 
-Don't forget to telnet to the qemu monitor console.
+Don't forget telnet.
 
 ```shell
-# execute in a new terminal
+# qemu monitor console
 telnet 127.0.0.1 1234
+
+# connect to guest tty
+telnet 127.0.0.1 4321
 ```
 
 After we successfully connect to monitor console, we can use `info qtree` to find out what devices or buses we can use for current machine.
@@ -94,4 +107,9 @@ info qtree
 #        address = 0 (0x0)
 ###################################
 
+```
+## quit telnet
+```shell
+# hit <C-]> first, you will see the telnet prompt: telnet>
+# type quit, then hit <ENTER>.
 ```
